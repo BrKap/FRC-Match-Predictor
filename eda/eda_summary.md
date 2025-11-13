@@ -188,7 +188,7 @@ Match-Level Red vs Blue Advantage Features
 - Penalty difference
 - Perhaps some aggregation of all of these for "Red vs Blue Advantage"
 
-Team-Level Features
+## Team-Level Features
 
 For each individual team:
 - Average auto/teleop/endgame score contribution
@@ -197,7 +197,7 @@ For each individual team:
 - Year to year performance change
 - Performance at specific event types (district/regional/champs)
 
-Event-Level Features
+## Event-Level Features
 - Event competitiveness score
 - Event stability score
 - Country/state/region of event
