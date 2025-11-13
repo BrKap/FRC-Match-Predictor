@@ -153,20 +153,25 @@ This bias is small but statistically persistent.
 Teleop appears strongest statistically should features be normalized by year or by possible max score?
 - I am currently normalizing by taking the max observed teleop that year and setting the match teleop score as a ratio compared to this max
 - However, this might not be the only method as perhaps some years a log could be better
+
 Auto and endgame vary dramatically by year should the model include year specific feature embeddings?
 - That seems like a lot of complexity and effort for maybe no value at all
 - Using just the raw values seem to have great correlation results so far
 - Furthermore, I want this predictor to work in future years without needing to spend a lot of effort to update the features
+
 Team performance varies over the season especially within a single event should we incorporate:
 - rolling averages?
 - matches in last X events?
+
 Foul points are highly noisy—should they be excluded or down weighted?
 - Originally I thought it would be an interesting feature
 - Since if a team is known for creating penalities, that would provide the other alliance points
+
 The Stability/Competitiveness seem to have some good correlations, however I am still not satisfied with some of the results and want to refine and tweak it.
 - Such as how to use these competiveness with winrate. An above average team competing with lower ranked teams result in higher winrate at an event.
 - Should I normalize winrate based on competiveness?
 - Should I do some normalization on winrate based on year since the game changes each year?
+
 I also want to explore teams by region/state/country
 - Is there correlation between median income and performance?
 - Are there higher performing teams in similar places (Ex: Some teams are partnered with each other and have mentors across multiple teams)
