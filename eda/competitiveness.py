@@ -242,7 +242,7 @@ def plot_event_stability_lines():
             g = g.sort_values("year")
             plt.plot(g["year"], g["mean_ratio"], alpha=0.25)
 
-        plt.title(f"Event Competitiveness Over Time — {phase.capitalize()}")
+        plt.title(f"Event Competitiveness Over Time - {phase.capitalize()}")
         plt.xlabel("Year")
         plt.ylabel("Mean Competitiveness Ratio")
         plt.tight_layout()

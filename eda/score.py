@@ -11,7 +11,7 @@ sns.set_theme(style="whitegrid", palette="muted")
 # Auto Phase Analysis
 # ============================================================
 def plot_auto_analysis(matches):
-    """Run all Auto-related plots — identical to original eda.py output."""
+    """Run all Auto-related plots - identical to original eda.py output."""
     print("\n=== Auto Phase Analysis ===")
 
     # ---------------------------------------------------------

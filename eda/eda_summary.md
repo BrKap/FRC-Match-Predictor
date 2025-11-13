@@ -1,4 +1,4 @@
-## EDA Summary — FRC Match Predictor Project
+## EDA Summary - FRC Match Predictor Project
 # Data Cleaning & Filtering
 
 The raw TBA data includes many inconsistencies:
@@ -38,7 +38,7 @@ Across auto, teleop, and endgame, we observe the expected trend:
 
 However, each phase behaves differently.
 
-2. Auto Advantage vs Win Probability — Linear Trend
+2. Auto Advantage vs Win Probability - Linear Trend
 
 ![Auto Win Probability Curve](outputs/auto_win_probability_curve.png)
 ![Auto Winrate Relationship](outputs/auto_diff_winrate_relationship.png)
@@ -52,7 +52,7 @@ Interpretation:
 
 Overall this makes sense since auto points are uncontested and offer highvalue scoring windows.
 
-3. Teleop Advantage vs Win Probability — Sigmoid Curve
+3. Teleop Advantage vs Win Probability - Sigmoid Curve
 
 ![(Teleop Sigmoid Curve)](outputs/teleop_win_probability_curve.png)
 ![Teleop Winrate Relationship](outputs/teleop_diff_winrate_relationship.png)
@@ -72,7 +72,7 @@ Teleop contributes the most total points, so:
 
 This insight makes teleop the strongest long-term predictive feature.
 
-4. Endgame Advantage — Highly Noisy
+4. Endgame Advantage - Highly Noisy
 
 ![Endgame Curve?](outputs/endgame_win_probability_curve.png)
 ![Endgame Winrate Relationship](outputs/endgame_diff_winrate_relationship.png)
@@ -163,7 +163,7 @@ Team performance varies over the season especially within a single event should 
 - rolling averages?
 - matches in last X events?
 
-Foul points are highly noisy—should they be excluded or down weighted?
+Foul points are highly noisy-should they be excluded or down weighted?
 - Originally I thought it would be an interesting feature
 - Since if a team is known for creating penalities, that would provide the other alliance points
 
@@ -180,7 +180,8 @@ I also want to explore teams by region/state/country
 # Intial Feature Ideas
 Based on the EDA, the following features appear promising:
 
-Match-Level Red vs Blue Advantage Features
+## Match-Level Red vs Blue Advantage Features
+
 - Auto ratio difference
 - Teleop ratio difference
 - Endgame ratio difference
