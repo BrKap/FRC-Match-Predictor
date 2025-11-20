@@ -2,6 +2,7 @@ from pathlib import Path
 import pandas as pd
 import seaborn as sns
 import re
+import numpy as np
 DATA_DIR = Path("data")
 EDA_DIR = Path("eda") / "outputs"
 EDA_DIR.mkdir(parents=True, exist_ok=True)
@@ -155,22 +156,47 @@ def normalize_phase_scores(matches):
         "auto": ("red_autoPoints", "blue_autoPoints"),
         "teleop": ("red_teleopPoints", "blue_teleopPoints"),
         "endgame": ("red_endgamePoints", "blue_endgamePoints"),
+        "total": ("red_score", "blue_score"),
     }
 
     for phase, (red_col, blue_col) in phases.items():
-        # Compute 95th percentile per year (avoid single extreme match dominating)
-        max_per_year = (
-            matches.groupby("year")[[red_col, blue_col]]
-            .quantile(0.95)
-            .max(axis=1)
-            .rename("max_val")
-        )
 
-        # Merge back to main DataFrame
+        if phase == "endgame":
+            # Endgame: use MAX per year (100%) because distribution is weird
+            max_per_year = (
+                matches.groupby("year")[[red_col, blue_col]]
+                .max()
+                .max(axis=1)
+                .rename("max_val")
+            )
+        else:
+            # Auto, teleop, total: use 95th percentile
+            max_per_year = (
+                matches.groupby("year")[[red_col, blue_col]]
+                .quantile(0.95)
+                .max(axis=1)
+                .rename("max_val")
+            )
+
+        # Merge per-year max into matches
         matches = matches.merge(max_per_year, on="year", how="left")
-        matches[f"red_{phase}_ratio_norm"] = matches[red_col] / matches["max_val"]
-        matches[f"blue_{phase}_ratio_norm"] = matches[blue_col] / matches["max_val"]
+
+        # Avoid division by zero
+        matches["max_val"] = matches["max_val"].replace(0, 1)
+
+        # Compute ratios
+        red_ratio = matches[red_col] / matches["max_val"]
+        blue_ratio = matches[blue_col] / matches["max_val"]
+
+        # Clean up infinities and NaNs -> treat as 0
+        red_ratio = red_ratio.replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        blue_ratio = blue_ratio.replace([np.inf, -np.inf], np.nan).fillna(0.0)
+
+        matches[f"red_{phase}_ratio_norm"] = red_ratio
+        matches[f"blue_{phase}_ratio_norm"] = blue_ratio
+
         matches.drop(columns=["max_val"], inplace=True)
+
 
     print("Phase normalization complete.")
     return matches

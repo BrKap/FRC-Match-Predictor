@@ -146,55 +146,55 @@ def main():
     download_all_events(session, HEADERS, START_YEAR, END_YEAR)
 
 
-    # for year in range(START_YEAR, END_YEAR + 1):
-    #     print(f"\nDownloading matches for {year} ...")
-    #     events = fetch(f"/events/{year}")
-    #     if not events:
-    #         print(f"No events for {year}")
-    #         continue
+    for year in range(START_YEAR, END_YEAR + 1):
+        print(f"\nDownloading matches for {year} ...")
+        events = fetch(f"/events/{year}")
+        if not events:
+            print(f"No events for {year}")
+            continue
 
-    #     for event in events:
-    #         event_key = event["key"]
-    #         matches = fetch(f"/event/{event_key}/matches")
-    #         if not matches:
-    #             continue
+        for event in events:
+            event_key = event["key"]
+            matches = fetch(f"/event/{event_key}/matches")
+            if not matches:
+                continue
 
-    #         for m in matches:
-    #             flat = extract_match(m, year)
-    #             all_matches.append(flat)
+            for m in matches:
+                flat = extract_match(m, year)
+                all_matches.append(flat)
 
-    #         time.sleep(RATE_LIMIT_DELAY)
+            time.sleep(RATE_LIMIT_DELAY)
 
-    # # ----------------------------
-    # # Write matches to CSV
-    # # ----------------------------
-    # if all_matches:
-    #     print(f"\nSaving {len(all_matches)} matches to {MATCHES_CSV}")
-    #     matches_df = pd.DataFrame(all_matches)
-    #     matches_df.to_csv(MATCHES_CSV, index=False)
+    # ----------------------------
+    # Write matches to CSV
+    # ----------------------------
+    if all_matches:
+        print(f"\nSaving {len(all_matches)} matches to {MATCHES_CSV}")
+        matches_df = pd.DataFrame(all_matches)
+        matches_df.to_csv(MATCHES_CSV, index=False)
 
-    # # ----------------------------
-    # # Download all teams
-    # # ----------------------------
-    # print("\nDownloading all teams...")
-    # page = 0
-    # while True:
-    #     teams = fetch(f"/teams/{page}")
-    #     if not teams:
-    #         break
-    #     for t in teams:
-    #         tid = t.get("key")
-    #         if tid not in all_teams:
-    #             all_teams[tid] = extract_team(t)
-    #     page += 1
-    #     time.sleep(RATE_LIMIT_DELAY)
+    # ----------------------------
+    # Download all teams
+    # ----------------------------
+    print("\nDownloading all teams...")
+    page = 0
+    while True:
+        teams = fetch(f"/teams/{page}")
+        if not teams:
+            break
+        for t in teams:
+            tid = t.get("key")
+            if tid not in all_teams:
+                all_teams[tid] = extract_team(t)
+        page += 1
+        time.sleep(RATE_LIMIT_DELAY)
 
-    # # ----------------------------
-    # # Write teams to CSV
-    # # ----------------------------
-    # print(f"Saving {len(all_teams)} teams to {TEAMS_CSV}")
-    # teams_df = pd.DataFrame(all_teams.values())
-    # teams_df.to_csv(TEAMS_CSV, index=False)
+    # ----------------------------
+    # Write teams to CSV
+    # ----------------------------
+    print(f"Saving {len(all_teams)} teams to {TEAMS_CSV}")
+    teams_df = pd.DataFrame(all_teams.values())
+    teams_df.to_csv(TEAMS_CSV, index=False)
 
     print("\nAll data collection complete!")
 

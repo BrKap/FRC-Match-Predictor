@@ -14,12 +14,15 @@ def plot_basic_distributions(matches, teams):
     """Plots win distribution, yearly average score, and correlations."""
     print("\n=== Basic Match Plots ===")
 
+    matches["winning_alliance"] = matches["winning_alliance"].fillna("tie")
+    matches.loc[matches["winning_alliance"] == "", "winning_alliance"] = "tie"
+    
     # Win distribution
     plt.figure(figsize=(6, 4))
     sns.countplot(
         data=matches,
         x="winning_alliance",
-        palette={"red": "red", "blue": "blue"}
+        palette={"red": "red", "blue": "blue", "tie": "gray"}
     )
     plt.title("Win Distribution (Red vs Blue)")
     plt.xlabel("Winning Alliance")

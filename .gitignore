@@ -205,3 +205,5 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+data/matches_processed.csv
+data/rolling_team_stats.csv

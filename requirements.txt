@@ -3,3 +3,6 @@ python-dotenv
 pandas
 seaborn
 matplotlib
+scikit-learn
+numpy
+scipy
