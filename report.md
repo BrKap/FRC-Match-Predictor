@@ -106,6 +106,10 @@ I generated confusion matrices for several weeks to visualize prediction behavio
 
 ![alt text](outputs/rolling/week_5/log_reg/log_reg_week5_confusion.png)
 
+Overall Confusion Matrix from Weeks 3-7:
+
+![alt text](outputs/overall/log_reg_confusion.png)
+
 However, because predicting Red win is just as important as predicting Blue win, my final evaluation metric ended up being Accuracy instead of traditional recall, precision, and F1.
 
 **B. ROC & PR Curves**
@@ -127,7 +131,6 @@ Week 3-7 overall predictions:
 
 ![alt text](outputs/overall/all_models_roc.png)
 
-![alt text](outputs/overall/log_reg_confusion.png)
 
 **C. Event Level Accuracy**
 Across 2025 events:
