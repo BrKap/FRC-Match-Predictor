@@ -34,7 +34,7 @@ To capture alliance synergy and extremes:
 
 These helped encode team imbalance, which strongly correlates with match outcomes alliances with one elite team and two average teams behave differently than three balanced teams.
 
-**D. Rolling Last-5-Matches Features**
+**D. Rolling Last 5 Matches Features**
 I implemented a match history window per team using chronological actual_time ordering:
 
 - avg_auto_5
@@ -102,12 +102,11 @@ Feature importance also helped prune poor contributors for cleaner models.
 
 I generated confusion matrices for several weeks to visualize prediction behavior:
 
-- Week 0: high false positives / false negatives due to lack of team data
-- Week 1–2: much higher predictions as rolling stats stabilize
-- Weeks 3–6: A linear trend upwards with dominance for LR & RF    
-- Week 7 (Championship): Surprisingly decreased again which I will need to look into
+![alt text](outputs/rolling/week_4/knn/knn_week4_confusion.png)
 
-![alt text](outputs/rolling/model_comparison_accuracy.png)
+![alt text](outputs/rolling/week_5/log_reg/log_reg_week5_confusion.png)
+
+However, because predicting Red win is just as important as predicting Blue win, my final evaluation metric ended up being Accuracy instead of traditional recall, precision, and F1.
 
 **B. ROC & PR Curves**
 Overall curves across the whole test distribution show:
@@ -116,12 +115,19 @@ Overall curves across the whole test distribution show:
 - KNN hovers near the threshold of usability
 
 Week 5 graphs:
+
 ![alt text](outputs/rolling/week_5/pr_all_models_week5.png)
+
 ![alt text](outputs/rolling/week_5/roc_all_models_week5.png)
 
+
 Week 3-7 overall predictions: 
-![alt text](outputs/all_models_pr.png) 
-![alt text](outputs/all_models_roc.png)
+
+![alt text](outputs/overall/all_models_pr.png) 
+
+![alt text](outputs/overall/all_models_roc.png)
+
+![alt text](outputs/overall/log_reg_confusion.png)
 
 **C. Event Level Accuracy**
 Across 2025 events:
@@ -146,11 +152,10 @@ To simulate realistic prediction (no future leakage), I implemented a rolling we
 - Repeat
 
 This produced realistic accuracies:
-- early weeks: ~60–67%
-- mid season weeks: ~70–82% (LR strongest)
-- championship: ~67–80%
+- early weeks: ~60-67%
+- mid season weeks: ~70-82% (LR strongest)
+- championship: ~67-80%
 
-Average Accuracy from each model for every event in each week:
 ![alt text](outputs/rolling/model_comparison_accuracy.png)
 
 Running this took substantial compute time, 30 minutes for 8 sets of retraining and evaluating, meaning a match by match rolling evaluation would be far slower, so for future testing I might implement these steps:
