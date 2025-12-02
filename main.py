@@ -8,7 +8,7 @@ import time
 from eda.cleaning import load_data, filter_matches, normalize_phase_scores
 
 # --- Preprocessing
-from preprocessing import build_features, generate_rolling_team_stats, load_and_truncate_team_stats, prepare_base_matches, temporal_split_by_year_week
+from preprocessing import build_features, generate_rolling_team_stats, load_and_truncate_team_stats, precompute_all_features, prepare_base_matches, temporal_split_by_year_week
 
 # --- Evaluator
 from evaluator import evaluate_model, evaluate_with_curves, get_knn_importance, get_logreg_importance, get_random_forest_importance, plot_all_roc, plot_all_pr, plot_model_accuracy_over_weeks
@@ -29,7 +29,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # ============================================================
 # Configuration
 # ============================================================
-REGENERATE_STATS = True  # If True, recompute all csv files from raw data
+REGENERATE_STATS = False  # If True, recompute all csv files from raw data
 SPLIT_YEAR = 2025   # Choose the year whose week boundary you want to split at
 SPLIT_WEEK = 3      # Choose the competition week for temporal cutoff
 
@@ -37,7 +37,7 @@ SPLIT_WEEK = 3      # Choose the competition week for temporal cutoff
 # Rolling Weekly Evaluation
 # ============================================================
 
-def rolling_weekly_eval(cleaned_matches, rolling_stats, target_year=2025):
+def rolling_weekly_eval(cleaned_matches, precomputed, target_year=2025):
     start_total = time.time()
     results = []
     event_results = []
@@ -67,21 +67,18 @@ def rolling_weekly_eval(cleaned_matches, rolling_stats, target_year=2025):
 
         # Test = current week only
         test_matches = year_matches[year_matches["week"] == wk].copy()
-
-        # Rolling stats truncated to PRE-week
-        rolling_stats_train = load_and_truncate_team_stats(
-            rolling_stats, train_matches, test_matches
-        )
+        print(f"Training matches: {len(train_matches)}, Testing matches: {len(year_matches[year_matches['week'] == wk])}")
 
         # Build features
+        print("Building features...")
         X_train, y_train, X_test, y_test, train_feat, test_feat = build_features(
-            train_matches,
-            test_matches,
-            rolling_stats_train
+            train_matches, test_matches, precomputed
         )
+
 
 
         # Train + Evaluate models
+        print("Training and evaluating models...")
         week_result = {"week": wk}
         all_probas = {}  # for combined ROC / PR
 
@@ -220,6 +217,15 @@ def main():
         rolling_stats = generate_rolling_team_stats(cleaned_matches, rolling_stats_path)
     else:
         rolling_stats = pd.read_csv(rolling_stats_path)
+        
+    prefeat_path = DATA_DIR / "prefeaturized_matches.csv"
+
+    if REGENERATE_STATS or not prefeat_path.exists():
+        print("\nPrecomputing full match features...")
+        precomputed = precompute_all_features(cleaned_matches, rolling_stats, prefeat_path)
+    else:
+        print("\nLoading precomputed full match features...")
+        precomputed = pd.read_csv(prefeat_path)
 
 
     # # ------------------------------------------------------------
@@ -348,7 +354,7 @@ def main():
     print("\n[4] Starting rolling weekly evaluation...\n")
 
     # Save weekly results
-    weekly_results = rolling_weekly_eval(cleaned_matches, rolling_stats, target_year=2025)
+    weekly_results = rolling_weekly_eval(cleaned_matches, precomputed, target_year=2025)
     out_path = OUTPUT_DIR / "rolling" / "weekly_results.csv"
     weekly_results.to_csv(out_path, index=False)
 

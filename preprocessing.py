@@ -628,26 +628,43 @@ def aggregate_team_stats_from_rolling(rolling_stats_train: pd.DataFrame):
 
     return agg
 
-
-
-
-def build_features(train_matches: pd.DataFrame,
-                                test_matches: pd.DataFrame,
-                                rolling_stats_train: pd.DataFrame):
+def precompute_all_features(cleaned_matches, rolling_stats, out_path):
     """
-    Builds ML features:
-        - team stats aggregated ONLY over training matches
-        - attaching those team stats to both training & test matches
+    Precompute ALL match-level features (team features + synergy + aggregates)
+    exactly once. Saves a fully-featured table keyed by match_key.
+
+    This eliminates the attach_team_features bottleneck during rolling evaluation.
     """
 
-    # 1. Aggregate team stats up to training cutoff
-    team_stats = aggregate_team_stats_from_rolling(rolling_stats_train)
+    print("=== Precomputing ALL match features (one-time heavy pass) ===")
 
-    # 2. Attach to matches
-    train_feat = attach_team_features(train_matches.copy(), team_stats)
-    test_feat  = attach_team_features(test_matches.copy(), team_stats)
+    # Aggregate rolling stats for ALL matches (as if everything is train)
+    print("Aggregating all-team rolling stats...")
+    team_stats_full = aggregate_team_stats_from_rolling(rolling_stats)
 
-    # 3. Build ML matrices
+    print("Attaching team features to ALL matches...")
+    all_features = attach_team_features(cleaned_matches.copy(), team_stats_full)
+
+    print(f"Saving precomputed ML features to: {out_path}")
+    all_features.to_csv(out_path, index=False)
+
+    return all_features
+
+
+
+
+
+def build_features(train_matches, test_matches, precomputed):
+    """
+    Fast build_features using precomputed match-level features.
+    No recomputation, just lookups by match_key, and selecting the
+    exact feature set we decided to keep.
+    """
+
+    # Restrict to the rows we need
+    train_feat = precomputed[precomputed["match_key"].isin(train_matches["match_key"])]
+    test_feat  = precomputed[precomputed["match_key"].isin(test_matches["match_key"])]
+
     feature_cols = [
         # Match Info
         # "year",
@@ -691,15 +708,16 @@ def build_features(train_matches: pd.DataFrame,
         "red_avg_winrate_5", "blue_avg_winrate_5",
         
         # Winrate
-        "red_avg_winrate", "blue_avg_winrate"
+        "red_avg_winrate", "blue_avg_winrate",
     ]
 
     X_train = train_feat[feature_cols]
-    y_train = train_feat["red_win"]
+    y_train = train_feat["red_win"].astype(int)
 
     X_test  = test_feat[feature_cols]
-    y_test  = test_feat["red_win"]
+    y_test  = test_feat["red_win"].astype(int)
 
     return X_train, y_train, X_test, y_test, train_feat, test_feat
+
 
 

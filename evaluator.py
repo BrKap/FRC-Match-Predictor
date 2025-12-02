@@ -148,6 +148,15 @@ def evaluate_model(y_true, y_pred, model_name="model"):
         "f1": f1,
     }
     
+def accuracy_score_simple(y_true, y_pred):
+    """
+    Simple accuracy helper used in rolling evaluation to avoid extra overhead.
+    """
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    return (y_true == y_pred).mean()
+
+    
 # ------------------------------------------------------------
 # Calibration Curve
 # ------------------------------------------------------------
