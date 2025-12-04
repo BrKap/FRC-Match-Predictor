@@ -281,7 +281,7 @@ def attach_event_weeks(matches: pd.DataFrame, data_dir=Path("data")):
 
 
     # 1) Regular competition weeks shift up by +1
-    #    TBA 0–5 -> Week 1–6
+    #    TBA 0-5 -> Week 1-6
     normal_mask = (merged["week"] >= 0) & (merged["week"] <= 5)
     merged.loc[normal_mask, "week"] = merged.loc[normal_mask, "week"] + 1
     
@@ -538,7 +538,7 @@ def temporal_split_by_year_week(matches, year, week):
 
 
 # ============================================================
-# MAIN PUBLIC API — PREPARE FEATURES FOR ML
+# MAIN PUBLIC API - PREPARE FEATURES FOR ML
 # ============================================================
 
 def prepare_base_matches(matches: pd.DataFrame):

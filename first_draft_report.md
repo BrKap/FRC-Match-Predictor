@@ -1,4 +1,4 @@
-## First Draft – FRC Match Predictor Project
+## First Draft - FRC Match Predictor Project
 Baseline Modeling, Feature Engineering, & Rolling Evaluation
 
 # 1. Feature Engineering & Model Development
@@ -135,9 +135,9 @@ Week 3-7 overall predictions:
 **C. Event Level Accuracy**
 Across 2025 events:
 
-- Logistic Regression consistently achieves 70–82% accuracy
-- Random Forest 65–78%
-- KNN 55–65%
+- Logistic Regression consistently achieves 70-82% accuracy
+- Random Forest 65-78%
+- KNN 55-65%
 
 This ranking holds in:
 - regionals
@@ -207,7 +207,7 @@ Better Rolling Evaluation
 - more detailed event level error analysis
 
 # Additional notes
-I am currently comparing my accuracy metrics against the publicly available predictions from Statbotics, which provides event level accuracy based on their EPA system. Their reported accuracies typically range from 70% to 95%, which is higher than the 65% to 80% accuracy achieved by my models. A few of my event level results come reasonably close—often within several percentage points but overall the EPA system still outperforms my current approach.
+I am currently comparing my accuracy metrics against the publicly available predictions from Statbotics, which provides event level accuracy based on their EPA system. Their reported accuracies typically range from 70% to 95%, which is higher than the 65% to 80% accuracy achieved by my models. A few of my event level results come reasonably close-often within several percentage points but overall the EPA system still outperforms my current approach.
 
 Even so, I am satisfied with this first draft, as it is competitive despite not using any of Statbotics’ specialized, year tailored model structure. While it is theoretically possible to decompose auto, teleop, endgame, and other point categories into fully normalized cross-year metrics, doing so without introducing leakage or relying on year specific knowledge is difficult. Since this project intentionally uses past years’ data without custom normalization for each season’s scoring system, some performance gap compared to EPA is expected.
 

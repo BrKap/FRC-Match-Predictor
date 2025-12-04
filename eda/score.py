@@ -31,7 +31,7 @@ def plot_auto_analysis(matches):
     matches_clean["red_auto_ratio"] = matches_clean["red_auto_ratio_norm"]
     matches_clean["blue_auto_ratio"] = matches_clean["blue_auto_ratio_norm"]
 
-    # Keep only valid, realistic ratios (0–1 range)
+    # Keep only valid, realistic ratios (0-1 range)
     ratio_df = matches_clean.dropna(subset=["red_auto_ratio", "blue_auto_ratio"])
     ratio_df = ratio_df[
         (ratio_df["red_auto_ratio"].between(0, 1)) &

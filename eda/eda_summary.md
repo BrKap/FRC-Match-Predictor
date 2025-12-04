@@ -27,7 +27,7 @@ Some events reported:
 
 These were excluded with modular filters in cleaning.py.
 
-After cleaning, we retain ≈132k high-quality matches from 2016–2025.
+After cleaning, we retain ≈132k high-quality matches from 2016-2025.
 
 # Key EDA Findings
 1. Clear Correlation Between Score Advantages and Winning
@@ -124,7 +124,7 @@ Meaning:
 ![Total Minus Fouls](outputs/event_stability_totalMinusFouls.png)
 
 Shows that:
-- Most events follow a consistent scoring profile across time (≈0.8–0.9 correlation stability)
+- Most events follow a consistent scoring profile across time (≈0.8-0.9 correlation stability)
 - 2018 stands out as an anomaly where nearly all event scores collapse toward a single convergence point.
 
 2018 is likely due to:

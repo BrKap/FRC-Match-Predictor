@@ -6,3 +6,5 @@ matplotlib
 scikit-learn
 numpy
 scipy
+xgboost
+lightgbm

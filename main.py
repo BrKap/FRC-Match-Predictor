@@ -18,6 +18,9 @@ from models.knn import KNNModel
 from models.random_forest import RandomForestModel
 from models.logistic_regression import LogisticRegressionModel
 from models.heuristic import HeuristicModel
+from models.xgboost import XGBoostModel
+from models.lightgbm import LightGBMModel
+from models.svm import SVMModel
 
 
 
@@ -74,8 +77,6 @@ def rolling_weekly_eval(cleaned_matches, precomputed, target_year=2025):
         X_train, y_train, X_test, y_test, train_feat, test_feat = build_features(
             train_matches, test_matches, precomputed
         )
-
-
 
         # Train + Evaluate models
         print("Training and evaluating models...")
@@ -185,6 +186,235 @@ def rolling_weekly_eval(cleaned_matches, precomputed, target_year=2025):
 
     return pd.DataFrame(results)
 
+def rolling_match_eval(cleaned_matches, precomputed, target_year=2025):
+    """
+    Rolling 'live-ish' evaluation:
+
+    - Start with training = all matches before target_year.
+    - For each week in target_year:
+        - For each stage in order: qm -> qf -> sf -> f
+        - For each match_number slot within that stage:
+            - Test on ALL matches in that week with that comp_level+match_number
+              (e.g., all QM1s in that week).
+            - Train models on all matches seen so far.
+            - Record predictions.
+            - Add those test matches into training for subsequent slots.
+
+    This closely mimics a live-season predictor that updates as the season progresses.
+    """
+
+    start_total = time.time()
+    results = []
+    event_results = []
+
+    year_matches = cleaned_matches[cleaned_matches["year"] == target_year].copy()
+    weeks = sorted(year_matches["week"].unique())
+    print(f"Rolling per-match evaluation over weeks: {weeks}")
+
+    # Start with all training = everything before target year
+    train_matches = cleaned_matches[cleaned_matches["year"] < target_year].copy()
+
+    # We’ll track cumulative accuracy ONLY for log_reg (your best model)
+    running_correct_logreg = 0
+    running_total_logreg = 0
+
+    for wk in weeks:
+        if wk == 7:
+            print(f"\n===== CHAMPIONSHIP (week {wk}) =====")
+        else:
+            print(f"\n===== WEEK {wk} =====")
+        week_start = time.time()
+
+        week_matches = year_matches[year_matches["week"] == wk].copy()
+        print(
+            f"Initial training matches: {len(train_matches)}, "
+            f"week {wk} matches: {len(week_matches)}"
+        )
+
+        # Per-week output directory
+        week_dir = OUTPUT_DIR / "rolling_match" / f"week_{wk}"
+        week_dir.mkdir(parents=True, exist_ok=True)
+
+        # Models we’ll run each slot
+        models = {
+            # "knn": KNNModel(),
+            # "random_forest": RandomForestModel(),
+            "log_reg": LogisticRegressionModel(),
+            "xgboost": XGBoostModel(),
+            "lightgbm": LightGBMModel(),
+            # "svm": SVMModel(),
+        }
+
+        # Accumulate true/pred/proba for all matches in this week
+        week_true = {name: [] for name in models}
+        week_pred = {name: [] for name in models}
+        week_proba = {name: [] for name in models}
+
+        # Order of competition phases
+        stage_order = ["qm", "qf", "sf", "f"]
+
+        for stage in stage_order:
+            stage_matches = week_matches[week_matches["comp_level"] == stage].copy()
+            if stage_matches.empty:
+                continue
+
+            # For this stage, iterate through match_number slots (1, 2, 3, …)
+            slot_numbers = sorted(stage_matches["match_number"].unique())
+            # print(f"  Stage {stage}: match_numbers={slot_numbers}")
+
+            for slot in slot_numbers:
+                slot_matches = stage_matches[stage_matches["match_number"] == slot].copy()
+                if slot_matches.empty:
+                    continue
+
+                print(
+                    f"    Stage {stage}, match_number {slot}: "
+                    f"testing {len(slot_matches)} matches"
+                )
+
+                # Build features for current train/test
+                X_train, y_train, X_test, y_test, train_feat, test_feat = build_features(
+                    train_matches, slot_matches, precomputed
+                )
+
+                 # Train + Predict for each model on this slot
+                for name, model in models.items():
+                    model_out = week_dir / name
+                    model_out.mkdir(exist_ok=True)
+
+                    model.train(X_train, y_train)
+                    preds = model.predict(X_test)
+
+                    if hasattr(model, "predict_proba"):
+                        proba = model.predict_proba(X_test).ravel()
+                        week_true[name].extend(y_test.tolist())
+                        week_pred[name].extend(preds.tolist())
+                        week_proba[name].extend(proba.tolist())
+
+                        # For running cumulative accuracy, track log_reg only
+                        if name == "log_reg":
+                            running_correct_logreg += (preds == y_test).sum()
+                            running_total_logreg += len(y_test)
+                    else:
+                        week_true[name].extend(y_test.tolist())
+                        week_pred[name].extend(preds.tolist())
+
+                    # --- Per-event accuracy tracking for this model and slot ---
+                    temp = test_feat.copy().reset_index(drop=True)
+                    temp["pred"] = preds  # predictions from this model
+
+                    for event, group in temp.groupby("event_key"):
+                        evt_correct = (group["pred"] == group["red_win"].astype(int)).sum()
+                        evt_total = len(group)
+                        evt_acc = evt_correct / evt_total
+
+                        event_results.append({
+                            "week": wk,
+                            "stage": stage,
+                            "match_number": slot,
+                            "event_key": event,
+                            "model": name,
+                            "accuracy": evt_acc,
+                            "num_matches": evt_total
+                        })
+                        
+                # After this slot, these matches are now "played" -> add them to training
+                train_matches = pd.concat(
+                    [train_matches, slot_matches],
+                    ignore_index=True
+                )
+
+        # ---------------------------
+        # Per-week metrics + curves
+        # ---------------------------
+        week_result = {"week": wk}
+        all_probas = {}
+
+        for name in models:
+            y_all = pd.Series(week_true[name])
+            if y_all.empty:
+                continue
+
+            preds_all = pd.Series(week_pred[name])
+
+            if len(week_proba[name]) > 0:
+                proba_all = pd.Series(week_proba[name])
+                metrics = evaluate_with_curves(
+                    y_all.values,
+                    preds_all.values,
+                    proba_all.values,
+                    model_name=f"{name}_week{wk}_match",
+                    out_dir=week_dir / name,
+                )
+                week_result[f"{name}_acc"] = metrics["best_accuracy"]
+                all_probas[name] = (y_all.values, proba_all.values)
+            else:
+                metrics = evaluate_model(
+                    y_all.values,
+                    preds_all.values,
+                    model_name=f"{name}_week{wk}_match",
+                )
+                week_result[f"{name}_acc"] = metrics["f1"]
+
+        # Combined ROC/PR for this week
+        if all_probas:
+            plot_all_roc(
+                all_probas,
+                week_dir / f"roc_all_models_week{wk}_match.png",
+            )
+            plot_all_pr(
+                all_probas,
+                week_dir / f"pr_all_models_week{wk}_match.png",
+            )
+
+        # Week runtime
+        week_time = time.time() - week_start
+        week_result["runtime_sec"] = week_time
+        print(f"Week {wk} per-match runtime: {week_time:.2f} sec")
+
+        results.append(week_result)
+
+    total_time = time.time() - start_total
+    print(f"\nTotal rolling per-match evaluation time: {total_time:.2f} sec")
+
+    # Save per-event accuracy (aggregated over all slots/matches)
+    event_df = pd.DataFrame(event_results)
+    event_out = Path("outputs") / "rolling_match" / "event_accuracy.csv"
+    event_out.parent.mkdir(parents=True, exist_ok=True)
+
+    if not event_df.empty:
+        # event_df currently has columns like:
+        #   week, stage, match_number, event_key, model, accuracy, num_matches
+        # where "accuracy" is per-batch (slot) accuracy over num_matches matches.
+
+        # Convert to "total correct" so we can aggregate exactly
+        event_df["num_correct"] = event_df["accuracy"] * event_df["num_matches"]
+
+        # Group by week + event + model (drop stage/match_number so it’s per-event)
+        grouped = (
+            event_df
+            .groupby(["week", "event_key", "model"], as_index=False)
+            .agg(
+                total_correct=("num_correct", "sum"),
+                num_matches=("num_matches", "sum"),
+            )
+        )
+
+        grouped["accuracy"] = grouped["total_correct"] / grouped["num_matches"]
+        grouped = grouped.drop(columns=["total_correct"])
+
+        # Final columns: week, event_key, model, accuracy, num_matches
+        grouped.to_csv(event_out, index=False)
+    else:
+        # Just in case
+        event_df.to_csv(event_out, index=False)
+
+    print(f"Saved per-event accuracy to {event_out}")
+
+
+    return pd.DataFrame(results)
+
+
 
 
 
@@ -229,7 +459,7 @@ def main():
 
 
     # # ------------------------------------------------------------
-    # # 3. Preprocessing — Create ML Features
+    # # 3. Preprocessing - Create ML Features
     # # ------------------------------------------------------------
     # print("\n[4] Attaching weeks and preparing match table...")
     # base_matches = prepare_base_matches(cleaned_matches)
@@ -351,23 +581,18 @@ def main():
     # ------------------------------------------------------------
     # 3. Rolling Weekly Evaluation
     # ------------------------------------------------------------
-    print("\n[4] Starting rolling weekly evaluation...\n")
+    print("\n[4] Starting rolling per-match evaluation...\n")
 
-    # Save weekly results
-    weekly_results = rolling_weekly_eval(cleaned_matches, precomputed, target_year=2025)
-    out_path = OUTPUT_DIR / "rolling" / "weekly_results.csv"
-    weekly_results.to_csv(out_path, index=False)
+    match_results = rolling_match_eval(cleaned_matches, precomputed, target_year=2025)
+    out_path = OUTPUT_DIR / "rolling_match" / "match_results.csv"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    match_results.to_csv(out_path, index=False)
 
-    print("\nRolling weekly evaluation complete!")
-    print(f"Saved results to {out_path}")
+    print("\nRolling per-match evaluation complete!")
+    print(f"Saved per-match results to {out_path}")
 
-    # ---------------------------------------------
-    # Plot accuracy comparison across weeks
-    # ---------------------------------------------
-
-    plot_out = OUTPUT_DIR / "rolling" / "model_comparison_accuracy.png"
-    plot_model_accuracy_over_weeks(weekly_results, plot_out)
-
+    plot_out = OUTPUT_DIR / "rolling_match" / "model_comparison_accuracy.png"
+    plot_model_accuracy_over_weeks(match_results, plot_out)
     print(f"Saved model comparison plot to {plot_out}")
 
 

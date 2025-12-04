@@ -25,7 +25,7 @@ def load_data():
         "matches_columns": matches.shape[1],
         "teams_rows": len(teams),
         "teams_columns": teams.shape[1],
-        "years_range": f"{matches['year'].min()}–{matches['year'].max()}",
+        "years_range": f"{matches['year'].min()}-{matches['year'].max()}",
         "unique_teams": teams['team_id'].nunique(),
         "unique_events": matches['event_key'].nunique(),
     }

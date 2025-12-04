@@ -43,7 +43,7 @@ def plot_roc_curve(y_true, y_proba, model_name, save_path):
     plt.plot(fpr, tpr, label=f"{model_name} (AUC={roc_auc:.3f})")
     plt.plot([0, 1], [0, 1], 'k--')  # random chance line
 
-    plt.title(f"ROC Curve — {model_name}")
+    plt.title(f"ROC Curve - {model_name}")
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
     plt.legend()
@@ -60,7 +60,7 @@ def plot_all_roc(all_results, save_path):
         plt.plot(fpr, tpr, label=f"{name} (AUC={roc_auc:.3f})")
 
     plt.plot([0,1],[0,1],'k--')
-    plt.title("ROC Curves — All Models")
+    plt.title("ROC Curves - All Models")
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
     plt.legend()
@@ -80,7 +80,7 @@ def plot_pr_curve(y_true, y_proba, model_name, save_path):
     plt.figure(figsize=(6, 5))
     plt.plot(recall, precision, label=f"{model_name} (AP={ap:.3f})")
 
-    plt.title(f"Precision-Recall Curve — {model_name}")
+    plt.title(f"Precision-Recall Curve - {model_name}")
     plt.xlabel("Recall")
     plt.ylabel("Precision")
     plt.legend()
@@ -96,7 +96,7 @@ def plot_all_pr(all_results, save_path):
         ap = average_precision_score(y_true, y_proba)
         plt.plot(recall, precision, label=f"{name} (AP={ap:.3f})")
 
-    plt.title("Precision-Recall Curves — All Models")
+    plt.title("Precision-Recall Curves - All Models")
     plt.xlabel("Recall")
     plt.ylabel("Precision")
     plt.legend()
@@ -167,7 +167,7 @@ def plot_calibration_curve(y_true, y_proba, model_name, save_path):
     plt.plot(prob_pred, prob_true, marker='o', label="Calibration")
     plt.plot([0,1],[0,1],'k--', label="Perfectly calibrated")
 
-    plt.title(f"Calibration Curve — {model_name}")
+    plt.title(f"Calibration Curve - {model_name}")
     plt.xlabel("Predicted Probability")
     plt.ylabel("Observed Frequency")
     plt.legend()
@@ -204,7 +204,7 @@ def plot_conf_matrix(y_true, y_pred, model_name, save_path):
                 xticklabels=["Blue", "Red"],
                 yticklabels=["Blue", "Red"])
 
-    plt.title(f"Confusion Matrix — {model_name}")
+    plt.title(f"Confusion Matrix - {model_name}")
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
     plt.tight_layout()
@@ -250,23 +250,38 @@ def plot_model_accuracy_over_weeks(df, out_path):
     import matplotlib.pyplot as plt
 
     weeks = df["week"]
-
     plt.figure(figsize=(10, 6))
 
-    # Plot each model
-    if "knn_acc" in df.columns:
-        plt.plot(weeks, df["knn_acc"], marker="o", label="KNN")
+    # Map from model key to nicer label
+    label_map = {
+        "knn":          "KNN",
+        "random_forest":"Random Forest",
+        "log_reg":      "Logistic Regression",
+        "xgboost":      "XGBoost",
+        "lightgbm":     "LightGBM",
+        "svm":          "SVM",
+    }
 
-    if "random_forest_acc" in df.columns:
-        plt.plot(weeks, df["random_forest_acc"], marker="o", label="Random Forest")
+    # Any column ending in "_acc" (except cumulative) is a model's accuracy
+    acc_cols = [
+        c for c in df.columns 
+        if c.endswith("_acc") and c != "cumulative_accuracy"
+    ]
 
-    if "log_reg_acc" in df.columns:
-        plt.plot(weeks, df["log_reg_acc"], marker="o", label="Logistic Regression")
+    for col in sorted(acc_cols):
+        model_key = col[:-4]  # strip "_acc"
+        label = label_map.get(model_key, model_key)
+        plt.plot(weeks, df[col], marker="o", label=label)
 
-    # Optional: cumulative accuracy
+    # Optional: cumulative accuracy (still log_reg-based in your code)
     if "cumulative_accuracy" in df.columns:
-        plt.plot(weeks, df["cumulative_accuracy"], marker="o",
-                 linestyle="--", label="Cumulative Accuracy", color="black")
+        plt.plot(
+            weeks,
+            df["cumulative_accuracy"],
+            marker="o",
+            linestyle="--",
+            label="Cumulative Accuracy",
+        )
 
     plt.xlabel("Week")
     plt.ylabel("Accuracy")
@@ -274,6 +289,6 @@ def plot_model_accuracy_over_weeks(df, out_path):
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
-
     plt.savefig(out_path, dpi=200)
     plt.close()
+
